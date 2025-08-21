@@ -6,7 +6,7 @@ import ffmpeg from '@/lib/ffmpeg';
 import { PassThrough, Readable } from 'stream';
 
 function nodeStreamToWeb(stream: NodeJS.ReadableStream): ReadableStream {
-  return Readable.toWeb(stream as any) as unknown as ReadableStream;
+  return Readable.toWeb(stream as Readable) as ReadableStream;
 }
 
 export async function GET(req: Request) {
@@ -36,12 +36,12 @@ export async function GET(req: Request) {
       return Response.json({ error: 'No audio formats available' }, { status: 404 });
     }
 
-    let selectedAudio: any = itag
-      ? audioCandidates.find((f: any) => String(f.itag) === String(itag))
+    let selectedAudio: unknown = itag
+      ? audioCandidates.find((f: unknown) => String((f as any).itag) === String(itag))
       : audioCandidates[0];
     if (!selectedAudio) selectedAudio = audioCandidates[0];
 
-    const selectedContainer = selectedAudio.container || (selectedAudio.mimeType ? selectedAudio.mimeType.split(';')[0].split('/')[1] : 'm4a');
+    const selectedContainer = (selectedAudio as any).container || ((selectedAudio as any).mimeType ? (selectedAudio as any).mimeType.split(';')[0].split('/')[1] : 'm4a');
 
     const targetFormat = format || selectedContainer;
     const isSameContainer = !format || format === selectedContainer;
@@ -66,13 +66,13 @@ export async function GET(req: Request) {
     });
 
     const inputStream = ytdl(url, {
-      quality: selectedAudio.itag,
+      quality: (selectedAudio as any).itag,
       highWaterMark: 1 << 25,
       requestOptions: { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36' } }
     });
 
-    inputStream.on('error', (err: any) => {
-      pass.destroy(err);
+    inputStream.on('error', (err: unknown) => {
+      pass.destroy(err as Error);
     });
 
     if (isSameContainer && targetFormat !== 'mp3') {
@@ -94,8 +94,8 @@ export async function GET(req: Request) {
     }
 
     command
-      .on('error', (err: any) => {
-        pass.destroy(err);
+      .on('error', (err: unknown) => {
+        pass.destroy(err as Error);
       })
       .on('start', (cmd: string) => {
         console.log('FFmpeg (audio) started:', cmd);
@@ -107,9 +107,9 @@ export async function GET(req: Request) {
 
     command.pipe(pass, { end: true });
     return new Response(nodeStreamToWeb(pass), { headers });
-  } catch (error: any) {
-    console.error('Audio download error:', error?.message || error);
-    return Response.json({ error: 'Audio download failed', details: error?.message || String(error) }, { status: 500 });
+  } catch (error: unknown) {
+    console.error('Audio download error:', (error as Error)?.message || error);
+    return Response.json({ error: 'Audio download failed', details: (error as Error)?.message || String(error) }, { status: 500 });
   }
 }
 

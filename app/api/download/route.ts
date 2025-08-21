@@ -10,7 +10,7 @@ import { PassThrough, Readable } from 'stream';
 
 function nodeStreamToWeb(stream: NodeJS.ReadableStream): ReadableStream {
   // Node 18+: convert Node stream to Web stream
-  return Readable.toWeb(stream as any) as unknown as ReadableStream;
+  return Readable.toWeb(stream as Readable) as ReadableStream;
 }
 
 export async function GET(req: Request) {
@@ -35,7 +35,7 @@ export async function GET(req: Request) {
     const title = (info.videoDetails.title || 'video').replace(/[^\w\s-]/gi, '').trim() || 'video';
 
     const formats = info.formats || [];
-    let selected: any = itag ? formats.find((f: any) => String(f.itag) === String(itag)) : null;
+    let selected: unknown = itag ? formats.find((f: unknown) => String((f as any).itag) === String(itag)) : null;
     if (!selected) {
       const progressive = ytdl.filterFormats(formats, 'videoandaudio');
       selected = progressive[0] || ytdl.filterFormats(formats, 'videoonly')[0] || formats[0];
@@ -45,10 +45,10 @@ export async function GET(req: Request) {
       return Response.json({ error: 'No suitable format found' }, { status: 404 });
     }
 
-    const parseCodecs = (fmt: any) => (fmt.codecs || (fmt.mimeType ? fmt.mimeType.split('codecs="')[1]?.split('"')[0] : '')) || '';
+    const parseCodecs = (fmt: unknown) => ((fmt as any).codecs || ((fmt as any).mimeType ? (fmt as any).mimeType.split('codecs="')[1]?.split('"')[0] : '')) || '';
     const selectedCodecs = parseCodecs(selected);
-    const selectedContainer = selected.container || (selected.mimeType ? selected.mimeType.split(';')[0].split('/')[1] : 'mp4');
-    const isProgressive = !!selected.hasVideo && !!selected.hasAudio;
+    const selectedContainer = (selected as any).container || ((selected as any).mimeType ? (selected as any).mimeType.split(';')[0].split('/')[1] : 'mp4');
+    const isProgressive = !!(selected as any).hasVideo && !!(selected as any).hasAudio;
 
     if (isProgressive) {
       const filename = `${title}.${selectedContainer || 'mp4'}`;
@@ -59,7 +59,7 @@ export async function GET(req: Request) {
       });
 
       const stream = ytdl(url, {
-        quality: selected.itag,
+        quality: (selected as any).itag,
         highWaterMark: 1 << 25,
         requestOptions: {
           headers: {
@@ -69,17 +69,17 @@ export async function GET(req: Request) {
       });
 
       const pass = new PassThrough();
-      stream.on('error', (err: any) => {
-        pass.destroy(err);
+      stream.on('error', (err: unknown) => {
+        pass.destroy(err as Error);
       });
       stream.pipe(pass);
       return new Response(nodeStreamToWeb(pass), { headers });
     }
 
     const audioCandidates = ytdl.filterFormats(formats, 'audioonly');
-    let chosenAudio: any = audioCandidates.find((a: any) => {
+    let chosenAudio: unknown = audioCandidates.find((a: unknown) => {
       const outContainerGuess = selectedContainer || 'mp4';
-      return (a.container || '').includes(outContainerGuess) || (a.mimeType || '').includes(outContainerGuess);
+      return ((a as any).container || '').includes(outContainerGuess) || ((a as any).mimeType || '').includes(outContainerGuess);
     });
     if (!chosenAudio) chosenAudio = audioCandidates[0];
     if (!chosenAudio) {
@@ -100,8 +100,8 @@ export async function GET(req: Request) {
     const tmpDir = path.join(os.tmpdir(), `ytmux-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     await fs.promises.mkdir(tmpDir, { recursive: true });
 
-    const videoExt = selectedContainer || (selected.mimeType ? selected.mimeType.split(';')[0].split('/')[1] : 'mp4');
-    const audioExtGuess = (chosenAudio.container || (chosenAudio.mimeType ? chosenAudio.mimeType.split(';')[0].split('/')[1] : 'm4a'));
+    const videoExt = selectedContainer || (selected as any).mimeType ? (selected as any).mimeType.split(';')[0].split('/')[1] : 'mp4';
+    const audioExtGuess = (chosenAudio as any).container || (chosenAudio as any).mimeType ? (chosenAudio as any).mimeType.split(';')[0].split('/')[1] : 'm4a';
     const audioExt = audioExtGuess === 'mp4' ? 'm4a' : audioExtGuess;
     const videoFile = path.join(tmpDir, `video.${videoExt}`);
     const audioFile = path.join(tmpDir, `audio.${audioExt}`);
@@ -115,12 +115,12 @@ export async function GET(req: Request) {
     });
 
     const videoReadable = ytdl(url, {
-      quality: selected.itag,
+      quality: (selected as any).itag,
       highWaterMark: 1 << 25,
       requestOptions: { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36' } }
     });
     const audioReadable = ytdl(url, {
-      quality: chosenAudio.itag,
+      quality: (chosenAudio as any).itag,
       highWaterMark: 1 << 25,
       requestOptions: { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36' } }
     });
@@ -144,9 +144,9 @@ export async function GET(req: Request) {
       .on('stderr', (line: string) => {
         console.log('FFmpeg:', line);
       })
-      .on('error', async (err: any) => {
-        console.error('FFmpeg error:', err?.message || err);
-        pass.destroy(err);
+      .on('error', async (err: unknown) => {
+        console.error('FFmpeg error:', (err as Error)?.message || err);
+        pass.destroy(err as Error);
         await cleanup();
       })
       .on('start', (cmd: string) => {
@@ -184,11 +184,11 @@ export async function GET(req: Request) {
 
     command.pipe(pass, { end: true });
     return new Response(nodeStreamToWeb(pass), { headers });
-  } catch (error: any) {
-    console.error('Download error:', error?.message || error);
+  } catch (error: unknown) {
+    console.error('Download error:', (error as Error)?.message || error);
     return Response.json({
       error: 'Download failed',
-      details: error?.message || String(error),
+      details: (error as Error)?.message || String(error),
       possibleSolutions: [
         'Try again in a few minutes',
         'Check if the video is available',

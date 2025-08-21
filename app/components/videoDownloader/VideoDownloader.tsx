@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from 'react';
+import Image from 'next/image';
 
 type Nullable<T> = T | null | undefined;
 
@@ -74,8 +75,8 @@ const VideoDownloader: React.FC<Props> = ({ baseUrl }) => {
             if (!res.ok) throw new Error(`Failed to fetch info (${res.status})`);
             const data: InfoResponse = await res.json();
             setInfo(data);
-        } catch (e: any) {
-            setError(e?.message || 'Something went wrong fetching video info');
+        } catch (e: unknown) {
+            setError((e as Error)?.message || 'Something went wrong fetching video info');
         } finally {
             setLoading(false);
         }
@@ -162,7 +163,7 @@ const VideoDownloader: React.FC<Props> = ({ baseUrl }) => {
             {info && (
                 <div className="video-info w-full max-w-3xl bg-[#181818] rounded-lg p-6 shadow-lg flex flex-col items-center">
                     <h3 className="text-2xl font-bold mb-2 text-center">{info.title}</h3>
-                    <img className="thumbnail w-48 rounded-lg mb-6 shadow" src={info.thumbnail} alt={info.title} />
+                    <Image className="thumbnail w-48 rounded-lg mb-6 shadow" src={info.thumbnail} alt={info.title} width={192} height={108} />
 
                     {/* Video + Audio */}
                     {progressiveFormats.length > 0 && (

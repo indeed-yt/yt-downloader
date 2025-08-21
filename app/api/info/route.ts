@@ -22,20 +22,20 @@ export async function GET(req: Request) {
     });
 
     const allFormats = info.formats || [];
-    const progressive = allFormats.filter((f: any) => f.hasVideo && f.hasAudio);
-    const videoOnly = allFormats.filter((f: any) => f.hasVideo && !f.hasAudio);
-    const audioOnly = allFormats.filter((f: any) => f.hasAudio && !f.hasVideo);
+    const progressive = allFormats.filter((f: unknown) => (f as any).hasVideo && (f as any).hasAudio);
+    const videoOnly = allFormats.filter((f: unknown) => (f as any).hasVideo && !(f as any).hasAudio);
+    const audioOnly = allFormats.filter((f: unknown) => (f as any).hasAudio && !(f as any).hasVideo);
 
-    const mapFmt = (f: any) => ({
-      itag: f.itag,
-      qualityLabel: f.qualityLabel || null,
-      bitrate: f.bitrate || f.averageBitrate || null,
-      fps: f.fps || null,
-      container: f.container || (f.mimeType ? f.mimeType.split(';')[0].split('/')[1] : null),
-      codecs: f.codecs || (f.mimeType ? f.mimeType.split('codecs="')[1]?.split('"')[0] : null),
-      hasVideo: !!f.hasVideo,
-      hasAudio: !!f.hasAudio,
-      mimeType: f.mimeType || null
+    const mapFmt = (f: unknown) => ({
+      itag: (f as any).itag,
+      qualityLabel: (f as any).qualityLabel || null,
+      bitrate: (f as any).bitrate || (f as any).averageBitrate || null,
+      fps: (f as any).fps || null,
+      container: (f as any).container || ((f as any).mimeType ? (f as any).mimeType.split(';')[0].split('/')[1] : null),
+      codecs: (f as any).codecs || ((f as any).mimeType ? (f as any).mimeType.split('codecs="')[1]?.split('"')[0] : null),
+      hasVideo: !!(f as any).hasVideo,
+      hasAudio: !!(f as any).hasAudio,
+      mimeType: (f as any).mimeType || null
     });
 
     return Response.json({
@@ -45,11 +45,11 @@ export async function GET(req: Request) {
       videoOnly: videoOnly.map(mapFmt),
       audioOnly: audioOnly.map(mapFmt)
     });
-  } catch (error: any) {
-    console.error('Info error:', error?.message || error);
+  } catch (error: unknown) {
+    console.error('Info error:', (error as Error)?.message || error);
     return Response.json({
       error: 'Failed to get video info',
-      details: error?.message || String(error),
+      details: (error as Error)?.message || String(error),
       solution: 'Try again later or use a different video'
     }, { status: 500 });
   }
