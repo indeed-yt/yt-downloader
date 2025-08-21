@@ -5,7 +5,10 @@ const nextConfig: NextConfig = {
     "fluent-ffmpeg",
     "ffmpeg-static",
     "@distube/ytdl-core"
-  ]
+  ],
+  images: {
+    domains: ["i.ytimg.com"]
+  }
 };
 
 export default nextConfig;
