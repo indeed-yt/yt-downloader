@@ -2,6 +2,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import ytdl from '@distube/ytdl-core';
+import { buildYouTubeHeaders } from '@/lib/youtubeHeaders';
 
 type YoutubeFormat = {
   itag: number;
@@ -28,9 +29,7 @@ export async function GET(req: Request) {
     const info = await ytdl.getInfo(url, {
       lang: 'en',
       requestOptions: {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
+        headers: buildYouTubeHeaders()
       }
     });
 
