@@ -5,6 +5,19 @@ import ytdl from '@distube/ytdl-core';
 import ffmpeg from '@/lib/ffmpeg';
 import { PassThrough, Readable } from 'stream';
 
+type YoutubeFormat = {
+  itag: number;
+  qualityLabel?: string;
+  bitrate?: number;
+  averageBitrate?: number;
+  fps?: number;
+  container?: string;
+  mimeType?: string;
+  codecs?: string;
+  hasVideo?: boolean;
+  hasAudio?: boolean;
+};
+
 function nodeStreamToWeb(stream: NodeJS.ReadableStream): ReadableStream {
   return Readable.toWeb(stream as Readable) as ReadableStream;
 }
@@ -36,12 +49,12 @@ export async function GET(req: Request) {
       return Response.json({ error: 'No audio formats available' }, { status: 404 });
     }
 
-    let selectedAudio: unknown = itag
-      ? audioCandidates.find((f: unknown) => String((f as any).itag) === String(itag))
+    let selectedAudio: YoutubeFormat | undefined = itag
+      ? audioCandidates.find((f: YoutubeFormat) => String(f.itag) === String(itag))
       : audioCandidates[0];
     if (!selectedAudio) selectedAudio = audioCandidates[0];
 
-    const selectedContainer = (selectedAudio as any).container || ((selectedAudio as any).mimeType ? (selectedAudio as any).mimeType.split(';')[0].split('/')[1] : 'm4a');
+    const selectedContainer = selectedAudio.container || (selectedAudio.mimeType ? selectedAudio.mimeType.split(';')[0].split('/')[1] : 'm4a');
 
     const targetFormat = format || selectedContainer;
     const isSameContainer = !format || format === selectedContainer;
@@ -66,7 +79,7 @@ export async function GET(req: Request) {
     });
 
     const inputStream = ytdl(url, {
-      quality: (selectedAudio as any).itag,
+      quality: selectedAudio.itag,
       highWaterMark: 1 << 25,
       requestOptions: { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36' } }
     });
