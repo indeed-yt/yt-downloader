@@ -11,7 +11,10 @@
   "dependencies": {
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "next": "15.4.7"
+    "next": "15.4.7",
+    "@distube/ytdl-core": "^4.15.8",
+    "fluent-ffmpeg": "^2.1.2",
+    "ffmpeg-static": "^5.2.0"
   },
   "devDependencies": {
     "typescript": "^5",

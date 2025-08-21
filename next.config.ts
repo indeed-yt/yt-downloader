@@ -1,7 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  experimental: {
+    serverComponentsExternalPackages: [
+      "fluent-ffmpeg",
+      "ffmpeg-static",
+      "@distube/ytdl-core"
+    ]
+  }
 };
 
 export default nextConfig;
